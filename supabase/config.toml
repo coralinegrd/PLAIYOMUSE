@@ -1,0 +1,31 @@
+# Supabase CLI configuration for Plaiyo.
+# If this file conflicts with your CLI version, delete it and run
+# `supabase init` — the migrations under supabase/migrations/ are what matter.
+project_id = "plaiyo-app"
+
+[api]
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+# Email verification is a hard gate for Plaiyo: keep signup confirmations ON.
+enable_confirmations = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true

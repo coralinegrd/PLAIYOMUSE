@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+/*
+ * Plaiyo design tokens — visual guide v1.0 (from Coraline, 2026-10-05).
+ * ~70% navy/neutral, ~20% blue, ~10% lime. Lime is an accent only.
+ * Primary actions are solid Electric Blue, never a gradient.
+ */
+@theme {
+  --color-navy: #071c33;        /* Deep navy — main dark background */
+  --color-midnight: #0b2340;    /* Midnight blue — strong surface */
+  --color-primary: #165dff;     /* Electric blue — primary action */
+  --color-cobalt: #244bdb;      /* Bright cobalt — secondary blue */
+  --color-lime: #b6f500;        /* Plaiyo lime — accents only */
+  --color-warm-white: #f7f8f5;  /* text on dark */
+  --color-soft: #f5f6f4;        /* Soft off-white — light background */
+  --color-ink: #081d33;         /* Ink navy — dark text */
+  --color-muted: #7e8996;       /* Cool grey — muted text */
+  --color-border: #dce2e7;      /* Soft grey-blue — borders */
+  --color-coral: #e56b6f;       /* Soft coral red — errors */
+}
