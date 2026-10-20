@@ -4,7 +4,8 @@ import { NextResponse, type NextRequest } from "next/server";
 /**
  * Refreshes the Supabase auth session on every request and enforces the
  * protected-route pattern: unauthenticated users hitting an app route are
- * redirected to /login. Public routes: /, /login, /signup, /auth/*.
+ * redirected to /login. Public routes: /, /login, /signup, /auth/*,
+ * /forgot-password, /reset-password, /terms, /privacy.
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -40,7 +41,11 @@ export async function updateSession(request: NextRequest) {
     pathname === "/" ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
-    pathname.startsWith("/auth");
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password") ||
+    pathname.startsWith("/terms") ||
+    pathname.startsWith("/privacy");
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();

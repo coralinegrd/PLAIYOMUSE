@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import AuthShell from "@/components/AuthShell";
+import BrandHeader from "@/components/BrandHeader";
+import PasswordField from "@/components/PasswordField";
+import TextField from "@/components/TextField";
+import { EnvelopeIcon, PinIcon, UserIcon } from "@/components/icons";
 
 export default async function SignupPage({
   searchParams,
@@ -27,8 +32,8 @@ export default async function SignupPage({
         // user clicks the confirmation link).
         data: { display_name: displayName, city },
         // Email verification is a hard gate: "Confirm email" must be ON in
-        // the Supabase Auth settings (see README). Until the user clicks the
-        // link in the email, they have no session.
+        // the Supabase Auth settings (see README). Until the user clicks
+        // the link in the email, they have no session.
         emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/auth/callback`,
       },
     });
@@ -54,75 +59,68 @@ export default async function SignupPage({
   }
 
   return (
-    <div className="space-y-6 pt-10">
-      <div className="rounded-3xl bg-navy p-6 text-warm-white">
-        <p className="text-3xl font-black">Join Plaiyo</p>
-        <p className="mt-2 font-semibold text-warm-white/80">
-          Create your account, confirm your email, and find people to play
-          with.
-        </p>
+    <AuthShell backHref="/">
+      <div className="mt-2">
+        <BrandHeader />
       </div>
 
+      <h1 className="mt-9 text-4xl font-black text-ink">Join Plaiyo</h1>
+      <p className="mt-2 font-semibold leading-relaxed text-muted">
+        Create your account, confirm your email, and find people to play
+        with.
+      </p>
+
       {params.error && (
-        <p role="alert" className="rounded-2xl bg-coral/15 px-4 py-3 font-bold text-coral">
+        <p role="alert" className="mt-6 rounded-2xl bg-coral/15 px-4 py-3 font-bold text-coral">
           {params.error}
         </p>
       )}
 
-      <form action={signup} className="space-y-3">
-        <label className="block">
-          <span className="text-sm font-bold text-muted">Display name</span>
-          <input
-            name="display_name"
-            required
-            autoComplete="name"
-            className="mt-1 w-full rounded-2xl border border-border bg-white px-3 py-3 font-semibold outline-none focus:border-primary"
-          />
-        </label>
-        <label className="block">
-          <span className="text-sm font-bold text-muted">City</span>
-          <input
-            name="city"
-            placeholder="Montréal"
-            autoComplete="address-level2"
-            className="mt-1 w-full rounded-2xl border border-border bg-white px-3 py-3 font-semibold outline-none focus:border-primary"
-          />
-        </label>
-        <label className="block">
-          <span className="text-sm font-bold text-muted">Email</span>
-          <input
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            className="mt-1 w-full rounded-2xl border border-border bg-white px-3 py-3 font-semibold outline-none focus:border-primary"
-          />
-        </label>
-        <label className="block">
-          <span className="text-sm font-bold text-muted">Password</span>
-          <input
-            name="password"
-            type="password"
-            required
-            minLength={8}
-            autoComplete="new-password"
-            className="mt-1 w-full rounded-2xl border border-border bg-white px-3 py-3 font-semibold outline-none focus:border-primary"
-          />
-        </label>
+      <form action={signup} className="mt-8 space-y-4">
+        <TextField
+          label="Display name"
+          name="display_name"
+          required
+          autoComplete="name"
+          icon={<UserIcon />}
+        />
+        <TextField
+          label="City"
+          name="city"
+          autoComplete="address-level2"
+          placeholder="Montréal"
+          icon={<PinIcon />}
+        />
+        <TextField
+          label="Email"
+          name="email"
+          type="email"
+          required
+          autoComplete="email"
+          placeholder="alex@email.com"
+          icon={<EnvelopeIcon />}
+        />
+        <PasswordField
+          label="Password"
+          name="password"
+          autoComplete="new-password"
+          required
+          minLength={8}
+        />
         <button
           type="submit"
-          className="w-full rounded-full bg-primary py-3 font-black text-white"
+          className="w-full rounded-full bg-primary py-4 font-black text-white shadow-lg shadow-primary/25"
         >
           Create my account
         </button>
       </form>
 
-      <p className="text-center font-semibold text-muted">
+      <p className="mt-9 text-center font-semibold text-muted">
         Already have an account?{" "}
         <Link href="/login" className="font-black text-primary">
           Log in
         </Link>
       </p>
-    </div>
+    </AuthShell>
   );
 }

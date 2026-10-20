@@ -35,7 +35,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${nunito.variable} bg-soft text-ink antialiased`}
+        className={`${nunito.variable} overflow-x-clip bg-soft text-ink antialiased`}
         style={{ fontFamily: "var(--font-plaiyo), Nunito, sans-serif" }}
       >
         <main className="mx-auto min-h-dvh w-full max-w-md px-4 pt-6 pb-24">
