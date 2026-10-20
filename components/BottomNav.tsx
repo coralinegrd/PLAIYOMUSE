@@ -2,13 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  CompassIcon,
+  HomeIcon,
+  MessageIcon,
+  UserIcon,
+  UsersIcon,
+} from "./icons";
 
 const ITEMS = [
-  { href: "/", label: "Home", icon: "⌂" },
-  { href: "/discover", label: "Discover", icon: "◎" },
-  { href: "/crews", label: "Crews", icon: "👥" },
-  { href: "/messages", label: "Messages", icon: "💬" },
-  { href: "/profile", label: "Profile", icon: "👤" },
+  { href: "/", label: "Home", Icon: HomeIcon },
+  { href: "/discover", label: "Discover", Icon: CompassIcon },
+  { href: "/crews", label: "Crews", Icon: UsersIcon },
+  { href: "/messages", label: "Messages", Icon: MessageIcon },
+  { href: "/profile", label: "Profile", Icon: UserIcon },
 ] as const;
 
 export default function BottomNav() {
@@ -17,30 +24,29 @@ export default function BottomNav() {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.625rem,env(safe-area-inset-bottom))]"
     >
-      <ul className="mx-auto flex max-w-md items-stretch justify-between px-2">
-        {ITEMS.map((item) => {
+      <ul className="pointer-events-auto mx-auto flex max-w-md items-stretch justify-between rounded-[1.75rem] border border-border/60 bg-white px-2 py-1.5 shadow-[0_10px_36px_rgba(7,28,51,0.14)]">
+        {ITEMS.map(({ href, label, Icon }) => {
           const active =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
+            href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
-            <li key={item.href} className="flex-1">
+            <li key={href} className="flex-1">
               <Link
-                href={item.href}
+                href={href}
                 aria-current={active ? "page" : undefined}
-                className={`relative flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-bold ${
+                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-bold ${
                   active ? "text-primary" : "text-muted"
                 }`}
               >
-                <span aria-hidden className="text-lg leading-none">
-                  {item.icon}
-                </span>
-                {item.label}
-                {active && (
-                  <span className="absolute bottom-1 h-1.5 w-1.5 rounded-full bg-lime" />
-                )}
+                <Icon className="h-6 w-6" />
+                {label}
+                <span
+                  aria-hidden
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    active ? "bg-lime" : "bg-transparent"
+                  }`}
+                />
               </Link>
             </li>
           );

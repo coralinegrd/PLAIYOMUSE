@@ -82,6 +82,45 @@ export function UserIcon({ className }: IconProps) {
   );
 }
 
+export function HomeIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <path d="m3.5 10.8 8.5-7.3 8.5 7.3" />
+      <path d="M5.8 8.9V19a1.8 1.8 0 0 0 1.8 1.8h8.8A1.8 1.8 0 0 0 18.2 19V8.9" />
+      <path d="M10 20.8v-5.5h4v5.5" />
+    </StrokeIcon>
+  );
+}
+
+export function CompassIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z" />
+      <circle cx="12" cy="12" r="0.5" fill="currentColor" stroke="none" />
+    </StrokeIcon>
+  );
+}
+
+export function UsersIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </StrokeIcon>
+  );
+}
+
+export function MessageIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+    </StrokeIcon>
+  );
+}
+
 export function PinIcon({ className }: IconProps) {
   return (
     <StrokeIcon className={className}>
