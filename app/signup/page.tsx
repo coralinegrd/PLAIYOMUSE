@@ -41,21 +41,31 @@ export default async function SignupPage({
       redirect(`/signup?error=${encodeURIComponent(error.message)}`);
     }
 
-    // If a session exists immediately (only when email confirmation is
-    // disabled in the project — not our production setting), refresh the
-    // city as well; with confirmation on, the trigger already stored it.
-    if (data.user && city) {
-      await supabase
-        .from("profiles")
-        .update({ city })
-        .eq("id", data.user.id);
+    if (data.session) {
+      // A session exists immediately — only possible when email
+      // confirmation is disabled in the project (not our production
+      // setting). Keep the historical behaviour for that edge: refresh
+      // the city (the trigger already stored it from the metadata) and
+      // land on the login page with the confirmation message.
+      if (data.user && city) {
+        await supabase
+          .from("profiles")
+          .update({ city })
+          .eq("id", data.user.id);
+      }
+      redirect(
+        "/login?message=" +
+          encodeURIComponent(
+            "Account created. Check your email and confirm your address to finish signing up.",
+          ),
+      );
     }
-    redirect(
-      "/login?message=" +
-        encodeURIComponent(
-          "Account created. Check your email and confirm your address to finish signing up.",
-        ),
-    );
+
+    // No session: email confirmation is pending. The account exists but
+    // grants NO access — the user lands on the explicit check-email state
+    // and must click the link in the confirmation email before they can
+    // log in and reach their dashboard.
+    redirect(`/signup/check-email?email=${encodeURIComponent(email)}`);
   }
 
   return (
