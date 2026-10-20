@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { cleanCityName } from "@/lib/city";
 
 const RUNNING_SPORTS = ["Running", "Trail Running", "Track & Field"];
 const PACE_RE = /^[0-9]{1,2}:[0-5][0-9]$/;
@@ -58,6 +59,14 @@ export async function createSession(formData: FormData) {
     redirect("/sessions/new?error=" + encodeURIComponent("Please pick a valid date and time."));
   }
 
+  // Store the city cleaned (trimmed, single spaces) so Discover's
+  // accent/case-insensitive matching starts from tidy values on both
+  // sides. Falls back to the profile city only when the field is absent.
+  const rawCity = formData.get("city");
+  const sessionCity = cleanCityName(
+    rawCity === null ? (profile?.city ?? "") : String(rawCity),
+  );
+
   const priceDollars = Number(formData.get("price") ?? 0);
   const priceCents = Number.isNaN(priceDollars)
     ? 0
@@ -72,7 +81,7 @@ export async function createSession(formData: FormData) {
       title: String(formData.get("title") ?? ""),
       description: String(formData.get("description") ?? ""),
       location: String(formData.get("location") ?? ""),
-      city: String(formData.get("city") ?? profile?.city ?? ""),
+      city: sessionCity,
       starts_at: startsAt.toISOString(),
       duration_minutes: Number(formData.get("duration") ?? 60) || null,
       capacity: Math.max(2, Number(formData.get("capacity") ?? 2) || 2),
