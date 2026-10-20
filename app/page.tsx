@@ -24,6 +24,9 @@ export default async function HomePage() {
     // The official lockup PNG (public/logo-lockup.png, used as-is) has a
     // Midnight Blue #0B2340 background — sampled from the file itself —
     // so the hero uses bg-midnight and the artwork blends in seamlessly.
+    // Desktop uses Coraline's newer official artwork instead
+    // (public/logo-desktop.png): white figure + wordmark on transparency,
+    // cropped to its alpha bounding box, designed for this dark panel.
     // The wrapper breaks out of the layout's max-w-md column to span the
     // full viewport (relative + left-1/2 + w-screen + -translate-x-1/2,
     // with -mt-6/-mb-24 cancelling the layout's vertical padding).
@@ -56,7 +59,15 @@ export default async function HomePage() {
             width={1024}
             height={500}
             priority
-            className="relative z-10 w-[min(74vw,330px)] lg:w-[min(46vw,720px)]"
+            className="relative z-10 w-[min(74vw,330px)] lg:hidden"
+          />
+          <Image
+            src="/logo-desktop.png"
+            alt="Plaiyo"
+            width={1672}
+            height={455}
+            priority
+            className="relative z-10 hidden h-auto lg:block lg:w-[min(46vw,720px)]"
           />
         </section>
 
