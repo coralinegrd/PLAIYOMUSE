@@ -56,7 +56,7 @@ export default async function HomePage() {
             width={1024}
             height={500}
             priority
-            className="relative z-10 w-[min(74vw,330px)] lg:w-[min(34vw,430px)]"
+            className="relative z-10 w-[min(74vw,330px)] lg:w-[min(46vw,720px)]"
           />
         </section>
 
@@ -81,7 +81,7 @@ export default async function HomePage() {
               </Link>
               <Link
                 href="/signup"
-                className="mt-5 flex items-center justify-center gap-2 font-black uppercase tracking-wider text-ink lg:justify-start"
+                className="mt-5 flex items-center justify-center gap-2 font-black uppercase tracking-wider text-ink"
               >
                 Sign up <span aria-hidden>→</span>
               </Link>
