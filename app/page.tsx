@@ -4,6 +4,14 @@ import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getParticipationCounts } from "@/lib/sessionCounts";
 import SessionCard, { type SessionListItem } from "@/components/SessionCard";
+import { UsersIcon } from "@/components/icons";
+
+type NearbyCrew = {
+  id: string;
+  name: string;
+  sports: { name: string } | null;
+  crew_members: { count: number }[] | null;
+};
 
 // No participations embed here: RLS hides other users' rows, so occupancy
 // comes from the aggregate counts view (see lib/sessionCounts.ts).
@@ -183,6 +191,19 @@ export default async function HomePage() {
   const nextWithCounts = nextSession ? withCounts(nextSession) : null;
   const nearbyWithCounts = nearbySessions.map(withCounts);
 
+  // "Crews nearby": up to 3 crews in my city, newest first (or the newest
+  // overall when I have no city set). Member counts are honest: the
+  // crew_members SELECT policy is readable by all authenticated users,
+  // so the (count) embed counts every member — same approach as /crews.
+  let crewsQuery = supabase
+    .from("crews")
+    .select("id, name, sports(name), crew_members(count)")
+    .order("created_at", { ascending: false })
+    .limit(3);
+  if (city) crewsQuery = crewsQuery.eq("city", city);
+  const { data: crewsNearby } = await crewsQuery;
+  const nearbyCrews = (crewsNearby ?? []) as unknown as NearbyCrew[];
+
   return (
     <div className="space-y-7">
       <header className="flex items-start justify-between">
@@ -247,6 +268,46 @@ export default async function HomePage() {
         ) : (
           <p className="rounded-3xl border border-border bg-white p-4 font-semibold text-muted">
             No nearby games yet. Try widening your distance in settings.
+          </p>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-xs font-black uppercase tracking-widest text-primary">
+            Crews nearby
+          </h2>
+          <Link href="/crews" className="text-sm font-bold text-primary">
+            See all
+          </Link>
+        </div>
+        {nearbyCrews.length > 0 ? (
+          <div className="space-y-3">
+            {nearbyCrews.map((crew) => (
+              <Link
+                key={crew.id}
+                href="/crews"
+                className="flex items-center gap-3 rounded-3xl border border-border bg-white p-4"
+              >
+                <span className="rounded-2xl bg-soft p-3 text-primary">
+                  <UsersIcon />
+                </span>
+                <span>
+                  <span className="block font-black text-ink">{crew.name}</span>
+                  <span className="block text-sm font-semibold text-muted">
+                    {crew.sports?.name ?? "All sports"} ·{" "}
+                    {crew.crew_members?.[0]?.count ?? 0} members
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-3xl border border-border bg-white p-4 font-semibold text-muted">
+            No crews nearby yet.{" "}
+            <Link href="/crews" className="font-bold text-primary">
+              Explore crews
+            </Link>
           </p>
         )}
       </section>
