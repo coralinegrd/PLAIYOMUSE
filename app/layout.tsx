@@ -56,7 +56,8 @@ export default async function RootLayout({
   } = await supabase.auth.getUser();
 
   // Onboarding gate. "Complete" is derived from the stored data (see
-  // lib/profileGate.ts): a display name, a city and at least one sport.
+  // lib/profileGate.ts): a display name, a gender, a city and at least
+  // one sport.
   // Google sign-ins arrive with an empty profile, and email signups no
   // longer collect anything up front, so both funnels land here and are
   // sent to their FIRST incomplete onboarding step; the step is

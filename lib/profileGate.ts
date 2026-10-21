@@ -4,10 +4,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * Profile-completion gate + onboarding state.
  *
  * Every account must finish a three-step onboarding before it can use
- * the app: a display name, a city, and at least one sport. "Complete"
- * is DERIVED from the stored data — never from a stored flag — so the
- * gate, the step-resume logic and the step pages all run the same
- * computation and can never disagree:
+ * the app: a display name and a gender (step 1), a city (step 2), and
+ * at least one sport (step 3). "Complete" is DERIVED from the stored
+ * data — never from a stored flag — so the gate, the step-resume logic
+ * and the step pages all run the same computation and can never
+ * disagree:
  *
  *   firstIncompleteStep(basics) — the step the user must do next
  *   isProfileComplete(basics)  — firstIncompleteStep(basics) === null
@@ -35,23 +36,42 @@ export function onboardingStepPath(step: OnboardingStep): string {
   return `/onboarding/${step}`;
 }
 
+/**
+ * The allowed gender values — the profiles.gender CHECK constraint in
+ * SQL form. Gender is collected for exactly one product rule (decision
+ * 2026-10-21): men cannot join women-only sessions, enforced in the
+ * join action and by the enforce_women_only_eligibility DB trigger.
+ * It is never displayed publicly.
+ */
+export const GENDERS = ["man", "woman", "non_binary"] as const;
+export type Gender = (typeof GENDERS)[number];
+
+export function isGender(value: unknown): value is Gender {
+  return (
+    typeof value === "string" &&
+    (GENDERS as readonly string[]).includes(value)
+  );
+}
+
 /** The onboarding state of one account, derived from stored data. */
 export type OnboardingBasics = {
   displayName?: string | null;
+  gender?: string | null;
   city?: string | null;
   sportsCount: number;
 };
 
 /**
  * The first step the account has not finished, or null when onboarding
- * is complete. The profiles columns are `not null default ''`, so
+ * is complete. The name/city columns are `not null default ''`, so
  * "unset" arrives as an empty string, never as SQL NULL — but OAuth
- * metadata edge cases are cheap to guard against.
+ * metadata edge cases are cheap to guard against. Gender is different:
+ * a nullable column, NULL until the user picks one on the name step.
  */
 export function firstIncompleteStep(
   basics: OnboardingBasics,
 ): OnboardingStep | null {
-  if (!basics.displayName?.trim()) return "name";
+  if (!basics.displayName?.trim() || !isGender(basics.gender)) return "name";
   if (!basics.city?.trim()) return "city";
   if (basics.sportsCount < 1) return "sports";
   return null;
@@ -75,13 +95,14 @@ export async function loadOnboardingBasics(
 ): Promise<OnboardingBasics> {
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, city, user_sports(count)")
+    .select("display_name, city, gender, user_sports(count)")
     .eq("id", userId)
     .maybeSingle();
 
   const row = profile as {
     display_name?: string | null;
     city?: string | null;
+    gender?: string | null;
     user_sports?: { count?: number }[];
   } | null;
 
@@ -100,6 +121,7 @@ export async function loadOnboardingBasics(
 
   return {
     displayName: row?.display_name ?? "",
+    gender: row?.gender ?? null,
     city: row?.city ?? "",
     sportsCount,
   };

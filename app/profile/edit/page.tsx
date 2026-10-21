@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isGender } from "@/lib/profileGate";
+import GenderField from "@/components/GenderField";
 import { ArrowLeftIcon } from "@/components/icons";
 
 /**
@@ -24,7 +26,7 @@ export default async function EditProfilePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, city, neighbourhood, bio")
+    .select("display_name, city, neighbourhood, bio, gender")
     .eq("id", user.id)
     .single();
 
@@ -47,6 +49,11 @@ export default async function EditProfilePage() {
     } = await supabase.auth.getUser();
     if (!user) redirect("/login");
 
+    // Gender rides along with the rest of the form. The selector
+    // always renders with the current value selected, so a normal save
+    // keeps it; the isGender guard also means a save can never write
+    // an out-of-set value or null the column out.
+    const gender = String(formData.get("gender") ?? "");
     await supabase
       .from("profiles")
       .update({
@@ -54,6 +61,7 @@ export default async function EditProfilePage() {
         city: String(formData.get("city") ?? ""),
         neighbourhood: String(formData.get("neighbourhood") ?? ""),
         bio: String(formData.get("bio") ?? ""),
+        ...(isGender(gender) ? { gender } : {}),
       })
       .eq("id", user.id);
 
@@ -129,6 +137,11 @@ export default async function EditProfilePage() {
             className="mt-1 w-full rounded-2xl border border-border px-3 py-2.5 font-semibold outline-none focus:border-primary"
           />
         </label>
+        <GenderField
+          label="Gender"
+          variant="card"
+          defaultValue={profile?.gender}
+        />
         <fieldset>
           <legend className="text-sm font-bold text-muted">My sports</legend>
           <div className="mt-2 flex max-h-48 flex-wrap gap-2 overflow-y-auto">

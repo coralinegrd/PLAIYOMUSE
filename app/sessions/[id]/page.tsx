@@ -65,6 +65,23 @@ export default async function SessionDetailPage({
   const waitlistCount = counts?.waitlist_count ?? waitlist.length;
   const spotsLeft = session.capacity - confirmedCount;
 
+  // Women-only eligibility (decision 2026-10-21): a viewer whose
+  // profile gender is 'man' cannot join a women-only session — the
+  // Join actions below are replaced by an explanation panel. Only the
+  // VIEWER's own gender is read here; nobody else's gender is ever
+  // rendered. The host and existing participants are unaffected, and
+  // the join action + the DB trigger re-enforce the same rule
+  // server-side.
+  const { data: viewerProfile } = await supabase
+    .from("profiles")
+    .select("gender")
+    .eq("id", user.id)
+    .maybeSingle();
+  const viewerGender =
+    (viewerProfile as { gender?: string | null } | null)?.gender ?? null;
+  const blockedFromWomenOnly =
+    session.women_only && viewerGender === "man" && !isHost && !mine;
+
   return (
     <div className="space-y-5">
       <Link href="/discover" className="font-black text-primary">
@@ -206,7 +223,15 @@ export default async function SessionDetailPage({
         )}
       </section>
 
-      {!isHost &&
+      {blockedFromWomenOnly ? (
+        <div className="rounded-2xl bg-soft px-4 py-3 text-center">
+          <p className="font-black text-ink">This is a women-only session.</p>
+          <p className="mt-1 font-semibold text-muted">
+            This session is reserved for women and non-binary players.
+          </p>
+        </div>
+      ) : (
+        !isHost &&
         (mine ? (
           <form action={leaveSession}>
             <input type="hidden" name="session_id" value={session.id} />
@@ -227,7 +252,8 @@ export default async function SessionDetailPage({
               {spotsLeft > 0 ? "Join session" : "Join the waitlist"}
             </button>
           </form>
-        ))}
+        ))
+      )}
       {isHost && (
         <p className="rounded-2xl bg-soft px-4 py-3 text-center font-bold text-muted">
           You&apos;re hosting this one.

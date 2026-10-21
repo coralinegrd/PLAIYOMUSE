@@ -11,6 +11,10 @@ import { createClient } from "@/lib/supabase/server";
  * participants' rows, so the app cannot count the roster itself. The
  * database also adds confirmed participants to the session conversation
  * (`participations_sync_conversation` trigger).
+ *
+ * Women-only sessions are checked here first, so the refusal carries a
+ * clean message; the `participations_women_only_eligibility` trigger
+ * enforces the same rule in the database as the final backstop.
  */
 export async function joinSession(formData: FormData) {
   const supabase = await createClient();
@@ -23,7 +27,7 @@ export async function joinSession(formData: FormData) {
 
   const { data: session } = await supabase
     .from("sessions")
-    .select("id, host_id, status")
+    .select("id, host_id, status, women_only")
     .eq("id", sessionId)
     .single();
   if (!session || session.status !== "scheduled") {
@@ -31,6 +35,25 @@ export async function joinSession(formData: FormData) {
   }
   if (session.host_id === user.id) {
     redirect(`/sessions/${sessionId}?error=You host this session.`);
+  }
+
+  // Women-only eligibility (decision 2026-10-21): only gender = 'man'
+  // is blocked; 'woman', 'non_binary' and a not-yet-set gender pass
+  // here (the onboarding gate guarantees a value in practice, and the
+  // DB trigger grandfathers NULL the same way).
+  if (session.women_only) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("gender")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (
+      (profile as { gender?: string | null } | null)?.gender === "man"
+    ) {
+      redirect(
+        `/sessions/${sessionId}?error=${encodeURIComponent("This is a women-only session.")}`,
+      );
+    }
   }
 
   const { error } = await supabase.from("participations").insert({

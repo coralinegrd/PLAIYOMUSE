@@ -4,11 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import {
   ONBOARDING_STEPS,
   firstIncompleteStep,
+  isGender,
   loadOnboardingBasics,
   onboardingStepPath,
   type OnboardingStep,
 } from "@/lib/profileGate";
 import OnboardingShell from "@/components/OnboardingShell";
+import GenderField from "@/components/GenderField";
 import TextField from "@/components/TextField";
 import { UserIcon } from "@/components/icons";
 
@@ -20,8 +22,12 @@ const STEP_INDEX = ONBOARDING_STEPS.indexOf(STEP);
  * you? »). The schema has a single name field (profiles.display_name),
  * so the First/Last inputs are stored joined into it — which is also
  * how the rest of the app consumes the name (the Home greeting splits
- * on the first space). No date of birth, no gender: nothing in the
- * product reads either (see the onboarding audit, §4.1–4.2).
+ * on the first space). Date of birth is NOT collected (nothing in the
+ * product reads it). Gender IS collected on this step (decision
+ * 2026-10-21) for exactly one rule: men cannot join women-only
+ * sessions — enforced here at the gate, again in the join action, and
+ * finally by the enforce_women_only_eligibility DB trigger. Gender is
+ * never displayed publicly.
  *
  * Guard (shared by every step): the funnel position is derived from
  * stored data, never stored itself — an earlier incomplete step wins,
@@ -62,6 +68,9 @@ export default async function OnboardingNamePage({
   const splitAt = storedName.indexOf(" ");
   const prefillFirst = splitAt === -1 ? storedName : storedName.slice(0, splitAt);
   const prefillLast = splitAt === -1 ? "" : storedName.slice(splitAt + 1).trim();
+  // Gender has no metadata source (no provider supplies it in a usable
+  // form) — the stored profile value is the only prefill.
+  const prefillGender = isGender(basics.gender) ? basics.gender : null;
 
   async function saveName(formData: FormData) {
     "use server";
@@ -85,12 +94,19 @@ export default async function OnboardingNamePage({
     }
     const displayName = [firstName, lastName].filter(Boolean).join(" ");
 
+    // Required, and validated against the same value set as the
+    // profiles.gender CHECK constraint — never trust the radio group.
+    const gender = String(formData.get("gender") ?? "");
+    if (!isGender(gender)) {
+      fail("Choose the option that describes you.");
+    }
+
     // UPDATE-only: the signup trigger guarantees the profile row exists
     // and RLS permits updating one's own row; there is deliberately no
     // client INSERT path on profiles.
     const { error } = await supabase
       .from("profiles")
-      .update({ display_name: displayName })
+      .update({ display_name: displayName, gender })
       .eq("id", user.id);
     if (error) {
       fail("We couldn't save your name. Please try again.");
@@ -132,6 +148,7 @@ export default async function OnboardingNamePage({
           defaultValue={prefillLast}
           icon={<UserIcon />}
         />
+        <GenderField label="I am" defaultValue={prefillGender} />
         <button
           type="submit"
           className="w-full rounded-full bg-primary py-4 font-black text-white shadow-lg shadow-primary/25"
