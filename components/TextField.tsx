@@ -14,6 +14,7 @@ export default function TextField({
   placeholder,
   icon,
   minLength,
+  defaultValue,
 }: {
   label: string;
   name: string;
@@ -23,6 +24,7 @@ export default function TextField({
   placeholder?: string;
   icon: ReactNode;
   minLength?: number;
+  defaultValue?: string;
 }) {
   const id = `field-${name}`;
   return (
@@ -42,6 +44,7 @@ export default function TextField({
           autoComplete={autoComplete}
           placeholder={placeholder}
           minLength={minLength}
+          defaultValue={defaultValue}
           className="w-full rounded-2xl border border-border bg-white py-3.5 pl-11 pr-4 font-semibold text-ink outline-none placeholder:font-semibold placeholder:text-muted/60 focus:border-primary"
         />
       </div>
