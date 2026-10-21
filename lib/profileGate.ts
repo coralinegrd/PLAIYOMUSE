@@ -1,13 +1,23 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 /**
- * Profile-completion gate.
+ * Profile-completion gate + onboarding state.
  *
- * Every account needs the two basics the email signup form collects —
- * a display name and a city — before it can use the app. Email signups
- * provide them up front (they travel in the auth metadata and the signup
- * trigger copies them into the profile row), but Google sign-ins never
- * do: the account connects straight in with an EMPTY profile. The root
- * layout therefore checks the signed-in user's profile on every render
- * and redirects incomplete profiles to /complete-profile.
+ * Every account must finish a three-step onboarding before it can use
+ * the app: a display name, a city, and at least one sport. "Complete"
+ * is DERIVED from the stored data — never from a stored flag — so the
+ * gate, the step-resume logic and the step pages all run the same
+ * computation and can never disagree:
+ *
+ *   firstIncompleteStep(basics) — the step the user must do next
+ *   isProfileComplete(basics)  — firstIncompleteStep(basics) === null
+ *
+ * Google sign-ins arrive with an empty profile (Google never provides
+ * the name/city the product needs, and no sports), and email signups
+ * now collect nothing up front either — both funnels enter onboarding
+ * at their first incomplete step. The root layout checks the signed-in
+ * user's state on every render and redirects incomplete profiles to
+ * that step; each step page re-runs the same derivation as its guard.
  */
 
 /**
@@ -17,30 +27,95 @@
  */
 export const PATHNAME_HEADER = "x-pathname";
 
-/** The slice of the profiles row the gate cares about. */
-export type ProfileBasics = {
-  display_name?: string | null;
+/** The three onboarding steps, in funnel order. */
+export const ONBOARDING_STEPS = ["name", "city", "sports"] as const;
+export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
+
+export function onboardingStepPath(step: OnboardingStep): string {
+  return `/onboarding/${step}`;
+}
+
+/** The onboarding state of one account, derived from stored data. */
+export type OnboardingBasics = {
+  displayName?: string | null;
   city?: string | null;
-} | null | undefined;
+  sportsCount: number;
+};
 
 /**
- * Complete = both basics present and non-blank. The profiles columns are
- * `not null default ''`, so "unset" arrives as an empty string, never as
- * SQL NULL — but OAuth metadata edge cases are cheap to guard against.
+ * The first step the account has not finished, or null when onboarding
+ * is complete. The profiles columns are `not null default ''`, so
+ * "unset" arrives as an empty string, never as SQL NULL — but OAuth
+ * metadata edge cases are cheap to guard against.
  */
-export function isProfileComplete(profile: ProfileBasics): boolean {
-  return Boolean(profile?.display_name?.trim()) && Boolean(profile?.city?.trim());
+export function firstIncompleteStep(
+  basics: OnboardingBasics,
+): OnboardingStep | null {
+  if (!basics.displayName?.trim()) return "name";
+  if (!basics.city?.trim()) return "city";
+  if (basics.sportsCount < 1) return "sports";
+  return null;
+}
+
+/** Complete = no incomplete step remains. */
+export function isProfileComplete(basics: OnboardingBasics): boolean {
+  return firstIncompleteStep(basics) === null;
+}
+
+/**
+ * Loads the onboarding state for one user in a single round trip: the
+ * profile row plus the count of its user_sports rows (PostgREST
+ * relationship embed on the user_sports.profile_id → profiles.id FK).
+ * Falls back to a head-count query if the embed ever comes back
+ * without a count, so callers always get a real number.
+ */
+export async function loadOnboardingBasics(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<OnboardingBasics> {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name, city, user_sports(count)")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const row = profile as {
+    display_name?: string | null;
+    city?: string | null;
+    user_sports?: { count?: number }[];
+  } | null;
+
+  let sportsCount: number | null = null;
+  if (Array.isArray(row?.user_sports)) {
+    const count = row.user_sports[0]?.count;
+    if (typeof count === "number") sportsCount = count;
+  }
+  if (sportsCount === null) {
+    const { count } = await supabase
+      .from("user_sports")
+      .select("sport_id", { count: "exact", head: true })
+      .eq("profile_id", userId);
+    sportsCount = count ?? 0;
+  }
+
+  return {
+    displayName: row?.display_name ?? "",
+    city: row?.city ?? "",
+    sportsCount,
+  };
 }
 
 /**
  * Paths a signed-in user with an incomplete profile may still render:
- * the completion page itself, the auth route handlers' namespace, and
- * the public/auth pages (their logged-out behaviour is untouched either
- * way; a signed-in user landing on them is never trapped by the gate).
- * Everything else — /, /discover, /crews, /messages, /profile,
- * /sessions/* — is an app route and stays gated until completion.
+ * the onboarding funnel itself, the /complete-profile redirect stub,
+ * the auth route handlers' namespace, and the public/auth pages (their
+ * logged-out behaviour is untouched either way; a signed-in user
+ * landing on them is never trapped by the gate). Everything else —
+ * /, /discover, /crews, /messages, /profile, /sessions/* — is an app
+ * route and stays gated until onboarding is complete.
  */
 const GATE_EXEMPT_PREFIXES = [
+  "/onboarding",
   "/complete-profile",
   "/auth",
   "/login",

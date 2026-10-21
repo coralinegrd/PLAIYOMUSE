@@ -8,8 +8,10 @@ import BottomNav from "@/components/BottomNav";
 import { createClient } from "@/lib/supabase/server";
 import {
   PATHNAME_HEADER,
+  firstIncompleteStep,
   isGateExemptPath,
-  isProfileComplete,
+  loadOnboardingBasics,
+  onboardingStepPath,
 } from "@/lib/profileGate";
 
 // Plaiyo typeface: Sofia Pro Soft in the brand guide; Nunito is the
@@ -53,34 +55,35 @@ export default async function RootLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Profile-completion gate. Email signups provide a display name and a
-  // city up front, so they pass instantly; Google sign-ins arrive with an
-  // empty profile and must complete it before reaching any app route.
-  // Every page renders inside this layout, so gating here covers the
-  // whole app (route handlers — /auth/*, /discover/set-city — don't
-  // render a layout and are the sanctioned escape hatches: the callback
-  // must be reachable to finish signing in, and set-city just bounces
-  // to /discover, which is gated like everything else).
+  // Onboarding gate. "Complete" is derived from the stored data (see
+  // lib/profileGate.ts): a display name, a city and at least one sport.
+  // Google sign-ins arrive with an empty profile, and email signups no
+  // longer collect anything up front, so both funnels land here and are
+  // sent to their FIRST incomplete onboarding step; the step is
+  // recomputed from the data on every render, which is what makes
+  // resume-after-interruption exact. Every page renders inside this
+  // layout, so gating here covers the whole app (route handlers —
+  // /auth/*, /discover/set-city — don't render a layout and are the
+  // sanctioned escape hatches: the callback must be reachable to finish
+  // signing in, and set-city just bounces to /discover, which is gated
+  // like everything else).
   //
-  // Loop safety: /complete-profile and the public/auth pages are exempt
-  // (isGateExemptPath), so the redirect target itself never redirects
-  // for incompleteness; and if the pathname header is missing (a render
-  // context the proxy didn't stamp — it stamps every page request), the
-  // gate stays open rather than risk trapping the user in a loop it
-  // can't verify an exit from.
+  // Loop safety: /onboarding, the /complete-profile stub and the
+  // public/auth pages are exempt (isGateExemptPath), so the redirect
+  // target itself never redirects for incompleteness; and if the
+  // pathname header is missing (a render context the proxy didn't
+  // stamp — it stamps every page request), the gate stays open rather
+  // than risk trapping the user in a loop it can't verify an exit from.
   let profileComplete = false;
   if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("display_name, city")
-      .eq("id", user.id)
-      .maybeSingle();
-    profileComplete = isProfileComplete(profile);
+    const basics = await loadOnboardingBasics(supabase, user.id);
+    const step = firstIncompleteStep(basics);
+    profileComplete = step === null;
 
-    if (!profileComplete) {
+    if (step !== null) {
       const pathname = (await headers()).get(PATHNAME_HEADER);
       if (pathname && !isGateExemptPath(pathname)) {
-        redirect("/complete-profile");
+        redirect(onboardingStepPath(step));
       }
     }
   }
@@ -94,9 +97,9 @@ export default async function RootLayout({
         <main className="mx-auto min-h-dvh w-full max-w-md px-4 pt-6 pb-24">
           {children}
         </main>
-        {/* No nav until the profile is complete: until then every app
-            route bounces to /complete-profile anyway, and the gate
-            screen belongs to the (nav-less) auth family. */}
+        {/* No nav until onboarding is complete: until then every app
+            route bounces to the current onboarding step anyway, and the
+            funnel screens belong to the (nav-less) auth family. */}
         {user && profileComplete && <BottomNav />}
       </body>
     </html>

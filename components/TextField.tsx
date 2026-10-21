@@ -15,6 +15,7 @@ export default function TextField({
   icon,
   minLength,
   defaultValue,
+  list,
 }: {
   label: string;
   name: string;
@@ -25,6 +26,8 @@ export default function TextField({
   icon: ReactNode;
   minLength?: number;
   defaultValue?: string;
+  /** id of a <datalist> to attach for suggestions (free text stays allowed). */
+  list?: string;
 }) {
   const id = `field-${name}`;
   return (
@@ -45,6 +48,7 @@ export default function TextField({
           placeholder={placeholder}
           minLength={minLength}
           defaultValue={defaultValue}
+          list={list}
           className="w-full rounded-2xl border border-border bg-white py-3.5 pl-11 pr-4 font-semibold text-ink outline-none placeholder:font-semibold placeholder:text-muted/60 focus:border-primary"
         />
       </div>

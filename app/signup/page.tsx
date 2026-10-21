@@ -3,9 +3,20 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AuthShell from "@/components/AuthShell";
 import BrandHeader from "@/components/BrandHeader";
+import GoogleButton from "@/components/GoogleButton";
 import PasswordField from "@/components/PasswordField";
 import TextField from "@/components/TextField";
-import { EnvelopeIcon, PinIcon, UserIcon } from "@/components/icons";
+import { EnvelopeIcon } from "@/components/icons";
+
+/**
+ * Neutral message for "this email is already in the system", used for
+ * both paths that can reveal it (see the action below). It tells the
+ * user exactly how to get unstuck without asserting that an account
+ * was created — and without confirming one exists either: a
+ * just-signed-up-but-unconfirmed address fits the same sentence.
+ */
+const ACCOUNT_EXISTS_MESSAGE =
+  "That email already has an account. Log in, or confirm your email first if you just signed up.";
 
 export default async function SignupPage({
   searchParams,
@@ -19,18 +30,16 @@ export default async function SignupPage({
     const supabase = await createClient();
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
-    const displayName = String(formData.get("display_name") ?? "");
-    const city = String(formData.get("city") ?? "");
 
+    // The form collects ONLY account credentials now. Display name and
+    // city used to travel in the auth metadata (the signup trigger
+    // copies them into the profile row); they are onboarding steps 1
+    // and 2 instead, so email users enter the same funnel as Google
+    // users and the trigger stores ''/'' until the steps fill them in.
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        // display_name + city travel in the auth metadata: the signup
-        // trigger copies them into the profile row, which is what makes
-        // them survive email confirmation (no session exists before the
-        // user clicks the confirmation link).
-        data: { display_name: displayName, city },
         // Email verification is a hard gate: "Confirm email" must be ON in
         // the Supabase Auth settings (see README). Until the user clicks
         // the link in the email, they have no session.
@@ -38,33 +47,39 @@ export default async function SignupPage({
       },
     });
     if (error) {
+      // Map existence-type errors to the same neutral handling as the
+      // obfuscated case below; keep validation messages (invalid email,
+      // weak password) specific, as the login page keeps its unmapped
+      // messages specific too — signup must not leak MORE than login.
+      const code = (error as { code?: string }).code ?? "";
+      if (code === "user_already_exists" || /already.*regist/i.test(error.message)) {
+        redirect(`/login?message=${encodeURIComponent(ACCOUNT_EXISTS_MESSAGE)}`);
+      }
       redirect(`/signup?error=${encodeURIComponent(error.message)}`);
     }
 
     if (data.session) {
       // A session exists immediately — only possible when email
       // confirmation is disabled in the project (not our production
-      // setting). Keep the historical behaviour for that edge: refresh
-      // the city (the trigger already stored it from the metadata) and
-      // land on the login page with the confirmation message.
-      if (data.user && city) {
-        await supabase
-          .from("profiles")
-          .update({ city })
-          .eq("id", data.user.id);
-      }
-      redirect(
-        "/login?message=" +
-          encodeURIComponent(
-            "Account created. Check your email and confirm your address to finish signing up.",
-          ),
-      );
+      // setting). The account is signed in with an empty profile; the
+      // layout gate routes it into onboarding on the next render.
+      redirect("/");
+    }
+
+    if (data.user && (data.user.identities?.length ?? 0) === 0) {
+      // Supabase's deliberate obfuscation: signing up with an email that
+      // already belongs to a CONFIRMED account returns a user object
+      // with an empty identities array and no error. Sending that user
+      // to check-email (the old behaviour) dead-ended them — no account
+      // was created and the email they needed was the login page, not a
+      // confirmation link. Route them there with the neutral message.
+      redirect(`/login?message=${encodeURIComponent(ACCOUNT_EXISTS_MESSAGE)}`);
     }
 
     // No session: email confirmation is pending. The account exists but
     // grants NO access — the user lands on the explicit check-email state
     // and must click the link in the confirmation email before they can
-    // log in and reach their dashboard.
+    // log in.
     redirect(`/signup/check-email?email=${encodeURIComponent(email)}`);
   }
 
@@ -86,21 +101,19 @@ export default async function SignupPage({
         </p>
       )}
 
-      <form action={signup} className="mt-8 space-y-4">
-        <TextField
-          label="Display name"
-          name="display_name"
-          required
-          autoComplete="name"
-          icon={<UserIcon />}
-        />
-        <TextField
-          label="City"
-          name="city"
-          autoComplete="address-level2"
-          placeholder="Montréal"
-          icon={<PinIcon />}
-        />
+      <div className="mt-8">
+        <GoogleButton />
+      </div>
+
+      <div className="mt-7 flex items-center gap-4" aria-hidden>
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-xs font-extrabold uppercase tracking-widest text-muted">
+          Or with your email
+        </span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
+      <form action={signup} className="mt-6 space-y-4">
         <TextField
           label="Email"
           name="email"
@@ -119,7 +132,7 @@ export default async function SignupPage({
         />
         <button
           type="submit"
-          className="w-full rounded-full bg-primary py-4 font-black text-white shadow-lg shadow-primary/25"
+          className="w-full rounded-full bg-primary py-4 font-black uppercase tracking-wider text-white shadow-lg shadow-primary/25"
         >
           Create my account
         </button>
