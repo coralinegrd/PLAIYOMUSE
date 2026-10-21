@@ -9,9 +9,21 @@ import {
   type OnboardingStep,
 } from "@/lib/profileGate";
 import OnboardingShell from "@/components/OnboardingShell";
+import SportsPicker from "@/components/SportsPicker";
 
 const STEP: OnboardingStep = "sports";
 const STEP_INDEX = ONBOARDING_STEPS.indexOf(STEP);
+
+/**
+ * Selection cap for THIS step only (Coraline's rule, 2026-10-21): a
+ * new user picks at most 3 sports while onboarding. /profile/edit
+ * stays uncapped — the step's promise is « You can always change them
+ * later », and later means as many as they want. Enforced twice on
+ * purpose: in the picker (unselected chips disable at the cap, so the
+ * limit is felt while tapping) and in the save action below (a forged
+ * or stale submission over the cap saves nothing).
+ */
+const MAX_SPORTS = 3;
 
 /**
  * Onboarding step 3 of 3 — sports preferences (« What sports are you
@@ -24,8 +36,9 @@ const STEP_INDEX = ONBOARDING_STEPS.indexOf(STEP);
  *
  * The options are the real taxonomy (all sports, grouped by category),
  * using the same checkbox-chip pattern and replace-semantics save as
- * /profile/edit. Completing requires at least one sport; there is no
- * maximum. No per-sport level is asked: user_sports.level is read by
+ * /profile/edit. Completing requires at least one sport and at most
+ * MAX_SPORTS (see below — the cap binds this step only). No
+ * per-sport level is asked: user_sports.level is read by
  * nothing in the product today (see the onboarding audit, §4.6), so
  * inserts omit it and the column default applies.
  */
@@ -86,9 +99,12 @@ export default async function OnboardingSportsPage({
     const fail = (message: string): never =>
       redirect(`${onboardingStepPath(STEP)}?error=${encodeURIComponent(message)}`);
 
-    const selected = formData.getAll("sport_ids").map(String);
+    const selected = [...new Set(formData.getAll("sport_ids").map(String))];
     if (selected.length < 1) {
       fail("Pick at least one sport to continue.");
+    }
+    if (selected.length > MAX_SPORTS) {
+      fail("Pick up to 3 sports — you can add more later in your profile.");
     }
 
     // Replace semantics, mirroring /profile/edit: the submitted set
@@ -135,32 +151,11 @@ export default async function OnboardingSportsPage({
       )}
 
       <form action={saveSports} className="mt-8">
-        <div className="space-y-6">
-          {categories.map((category) => (
-            <fieldset key={category.name}>
-              <legend className="text-xs font-black uppercase tracking-widest text-primary">
-                {category.name}
-              </legend>
-              <div className="mt-2.5 flex flex-wrap gap-2">
-                {category.sports.map((sport) => (
-                  <label
-                    key={sport.id}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-white px-3 py-1.5 text-sm font-bold text-ink has-checked:border-primary has-checked:bg-primary has-checked:text-white"
-                  >
-                    <input
-                      type="checkbox"
-                      name="sport_ids"
-                      value={sport.id}
-                      defaultChecked={selectedIds.has(sport.id)}
-                      className="sr-only"
-                    />
-                    {sport.name}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          ))}
-        </div>
+        <SportsPicker
+          categories={categories}
+          initialSelected={[...selectedIds]}
+          max={MAX_SPORTS}
+        />
         <button
           type="submit"
           className="mt-8 w-full rounded-full bg-primary py-4 font-black text-white shadow-lg shadow-primary/25"
