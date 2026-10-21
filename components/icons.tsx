@@ -130,6 +130,162 @@ export function PinIcon({ className }: IconProps) {
   );
 }
 
+export function GearIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M12 3v2.4M12 18.6V21M3 12h2.4M18.6 12H21M5.6 5.6l1.7 1.7M16.7 16.7l1.7 1.7M18.4 5.6l-1.7 1.7M7.3 16.7l-1.7 1.7" />
+    </StrokeIcon>
+  );
+}
+
+export function PencilIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+      <path d="m15 5 4 4" />
+    </StrokeIcon>
+  );
+}
+
+export function StarIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8L12 3.6z" />
+    </StrokeIcon>
+  );
+}
+
+export function InfoIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 16v-4" />
+      <path d="M12 8h.01" />
+    </StrokeIcon>
+  );
+}
+
+export function CalendarIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <rect x="3" y="4" width="18" height="17" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </StrokeIcon>
+  );
+}
+
+export function ClockIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 6v6l4 2" />
+    </StrokeIcon>
+  );
+}
+
+export function BanIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m5.6 5.6 12.8 12.8" />
+    </StrokeIcon>
+  );
+}
+
+export function ActivityIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+    </StrokeIcon>
+  );
+}
+
+export function BellIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+    </StrokeIcon>
+  );
+}
+
+export function ShieldIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <path d="M12 22s8-3.6 8-10V5l-8-3-8 3v7c0 6.4 8 10 8 10z" />
+    </StrokeIcon>
+  );
+}
+
+export function UserPlusIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <path d="M14.5 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="3.5" />
+      <path d="M18.5 5v6M15.5 8h6" />
+    </StrokeIcon>
+  );
+}
+
+export function FlagIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+      <path d="M4 22v-7" />
+    </StrokeIcon>
+  );
+}
+
+export function RocketIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+      <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+      <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+    </StrokeIcon>
+  );
+}
+
+export function GiftIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <rect x="3" y="8" width="18" height="4" />
+      <path d="M12 8v13" />
+      <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
+      <path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s-4.5 0-4.5 0" />
+      <path d="M16.5 8a2.5 2.5 0 0 0 0-5C13 3 12 8 12 8s4.5 0 4.5 0" />
+    </StrokeIcon>
+  );
+}
+
+export function LogoutIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="m16 17 5-5-5-5" />
+      <path d="M21 12H9" />
+    </StrokeIcon>
+  );
+}
+
+export function ChevronRightIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <path d="m9 18 6-6-6-6" />
+    </StrokeIcon>
+  );
+}
+
+export function CheckIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <path d="M20 6 9 17l-5-5" />
+    </StrokeIcon>
+  );
+}
+
 /** Official multicolour Google "G" mark. */
 export function GoogleIcon({ className = "h-5 w-5" }: IconProps) {
   return (
