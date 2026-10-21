@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { CITY_COOKIE } from "@/lib/city";
 import { isProfileComplete } from "@/lib/profileGate";
@@ -24,6 +25,13 @@ export default async function CompleteProfilePage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  // The root layout already calls `connection()` before its own
+  // Supabase load, which makes this page request-time rendered too;
+  // repeat the signal here, before this page's own session/profile
+  // reads, so the page never depends on layout ordering to stay out
+  // of the prerender pass that trips over the session's Date.now().
+  await connection();
+
   const params = await searchParams;
   const supabase = await createClient();
   const {

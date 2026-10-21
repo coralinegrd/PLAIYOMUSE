@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getParticipationCounts } from "@/lib/sessionCounts";
 import SessionCard, { type SessionListItem } from "@/components/SessionCard";
@@ -10,6 +11,11 @@ const SESSION_SELECT =
   "id, title, starts_at, location, city, capacity, is_paid, price_cents, currency, skill_level, average_pace, distance_value, distance_unit, sports(name, photo_url), profiles!sessions_host_id_fkey(display_name)";
 
 export default async function HomePage() {
+  // Request-time render: this page loads the Supabase session in its own
+  // body, and the layout's connection() doesn't shield page-level reads
+  // from the Cache Components prerender pass — see app/layout.tsx.
+  await connection();
+
   const supabase = await createClient();
   const {
     data: { user },

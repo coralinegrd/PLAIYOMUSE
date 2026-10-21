@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 type CrewRow = {
@@ -14,6 +15,9 @@ export default async function CrewsPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
+  // Request-time render (Supabase session read below) — see app/layout.tsx.
+  await connection();
+
   const params = await searchParams;
   const tab = params.tab === "discover" ? "discover" : "mine";
 

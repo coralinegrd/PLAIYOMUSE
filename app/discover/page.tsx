@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getParticipationCounts } from "@/lib/sessionCounts";
 import SessionCard, { type SessionListItem } from "@/components/SessionCard";
@@ -68,6 +69,9 @@ export default async function DiscoverPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  // Request-time render (Supabase session read below) — see app/layout.tsx.
+  await connection();
+
   const params = await searchParams;
   const q = (params.q ?? "").trim();
   const when =

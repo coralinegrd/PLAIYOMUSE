@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProfilePage({
@@ -6,6 +7,9 @@ export default async function ProfilePage({
 }: {
   searchParams: Promise<{ saved?: string }>;
 }) {
+  // Request-time render (Supabase session read below) — see app/layout.tsx.
+  await connection();
+
   const params = await searchParams;
   const supabase = await createClient();
   const {

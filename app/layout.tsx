@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 import { createClient } from "@/lib/supabase/server";
@@ -34,6 +35,19 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Everything below depends on the incoming request (the Supabase
+  // session cookie), so stop prerendering here and render at request
+  // time. Without this, Cache Components runs a prerender pass over the
+  // layout first: the Supabase client's session load calls Date.now()
+  // internally before any request-time API is touched, the prerender
+  // throws ("unstable value `Date.now()` while prerendering"), and the
+  // route falls back to a slow render while the browser sits on the
+  // empty shell — the white screen on /complete-profile. `connection()`
+  // is the documented fix for exactly this (see the connection() API
+  // reference: "prerendering stops here"). `instant = false` above only
+  // opts out of static-shell *validation*; it does not stop the pass.
+  await connection();
+
   const supabase = await createClient();
   const {
     data: { user },

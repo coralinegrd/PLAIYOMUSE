@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { joinSession, leaveSession } from "./actions";
 
@@ -10,6 +11,9 @@ export default async function SessionDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string; joined?: string; left?: string }>;
 }) {
+  // Request-time render (Supabase session read below) — see app/layout.tsx.
+  await connection();
+
   const { id } = await params;
   const sp = await searchParams;
 
