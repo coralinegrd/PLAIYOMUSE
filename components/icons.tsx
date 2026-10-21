@@ -210,6 +210,15 @@ export function BellIcon({ className }: IconProps) {
   );
 }
 
+export function PlusIcon({ className }: IconProps) {
+  return (
+    <StrokeIcon className={className}>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </StrokeIcon>
+  );
+}
+
 export function ShieldIcon({ className }: IconProps) {
   return (
     <StrokeIcon className={className}>

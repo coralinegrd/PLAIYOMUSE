@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getParticipationCounts } from "@/lib/sessionCounts";
 import SessionCard, { type SessionListItem } from "@/components/SessionCard";
+import { BellIcon, PlusIcon } from "@/components/icons";
 import { UsersIcon } from "@/components/icons";
 
 type NearbyCrew = {
@@ -136,6 +137,22 @@ export default async function HomePage() {
     .single();
 
   const firstName = (profile?.display_name || "there").split(" ")[0];
+  // Greeting follows the user's day, not the server's: Plaiyo's users are
+  // in the America/Toronto timezone (the same zone Discover uses for its
+  // Today/This week bounds).
+  const torontoHour = Number(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Toronto",
+      hour: "numeric",
+      hourCycle: "h23",
+    }).format(new Date()),
+  );
+  const greeting =
+    torontoHour < 12
+      ? "Good morning"
+      : torontoHour < 18
+        ? "Good afternoon"
+        : "Good evening";
   const city = profile?.city ?? "";
   const now = new Date().toISOString();
 
@@ -208,7 +225,7 @@ export default async function HomePage() {
     <div className="space-y-7">
       <header className="flex items-start justify-between">
         <h1 className="text-3xl font-black leading-tight text-ink">
-          Good afternoon,
+          {greeting},
           <br />
           {firstName}
         </h1>
@@ -216,7 +233,7 @@ export default async function HomePage() {
           aria-label="Notifications"
           className="rounded-full border border-border bg-white p-2.5 text-primary"
         >
-          🔔
+          <BellIcon className="h-6 w-6" />
         </span>
       </header>
 
@@ -267,7 +284,7 @@ export default async function HomePage() {
           </div>
         ) : (
           <p className="rounded-3xl border border-border bg-white p-4 font-semibold text-muted">
-            No nearby games yet. Try widening your distance in settings.
+            No nearby games yet.
           </p>
         )}
       </section>
@@ -311,6 +328,18 @@ export default async function HomePage() {
           </p>
         )}
       </section>
+
+      {/* Floating create action, as on Coraline's reference home: a blue
+          + circle above the bottom navigation, right-aligned to the app
+          column (the column is max-w-md centered, so on wide screens the
+          offset follows its right edge instead of the viewport's). */}
+      <Link
+        href="/sessions/new"
+        aria-label="Create a session"
+        className="fixed bottom-24 right-[max(1rem,calc(50%-13rem))] z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30"
+      >
+        <PlusIcon className="h-7 w-7" />
+      </Link>
     </div>
   );
 }
