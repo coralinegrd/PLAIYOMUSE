@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { getParticipationCounts } from "@/lib/sessionCounts";
 import SessionCard, { type SessionListItem } from "@/components/SessionCard";
 import { BellIcon, PlusIcon } from "@/components/icons";
@@ -31,6 +32,12 @@ export default async function HomePage() {
   // body, and the layout's connection() doesn't shield page-level reads
   // from the Cache Components prerender pass — see app/layout.tsx.
   await connection();
+
+  if (!hasSupabaseEnv()) {
+    // Same Preview-without-env-vars case as the layout: render the
+    // public landing without touching Supabase.
+    return <PublicLanding />;
+  }
 
   const supabase = await createClient();
   const {

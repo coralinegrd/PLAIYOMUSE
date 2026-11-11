@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { PATHNAME_HEADER } from "@/lib/profileGate";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
 
 /**
  * Refreshes the Supabase auth session on every request and enforces the
@@ -24,6 +25,33 @@ export async function updateSession(request: NextRequest) {
     NextResponse.next({ request: { headers: requestHeaders } });
 
   let supabaseResponse = nextResponse();
+
+  const isPublicRoute =
+    pathname === "/" ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password") ||
+    pathname.startsWith("/terms") ||
+    pathname.startsWith("/privacy");
+
+  // No Supabase credentials in this environment (e.g. a Vercel Preview
+  // deployment whose env vars are Production-scoped only):
+  // createServerClient() would throw here and every route would 500
+  // before rendering. Auth cannot be verified, so treat the visitor as
+  // signed out: public routes render logged-out, protected routes stay
+  // closed by sending visitors to /login — the same outcome as being
+  // signed out, without the throw.
+  if (!hasSupabaseEnv()) {
+    if (!isPublicRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
+    }
+    return supabaseResponse;
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,16 +78,6 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const isPublicRoute =
-    pathname === "/" ||
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/signup") ||
-    pathname.startsWith("/auth") ||
-    pathname.startsWith("/forgot-password") ||
-    pathname.startsWith("/reset-password") ||
-    pathname.startsWith("/terms") ||
-    pathname.startsWith("/privacy");
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();

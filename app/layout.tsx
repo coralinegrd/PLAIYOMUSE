@@ -6,6 +6,7 @@ import { connection } from "next/server";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 import { createClient } from "@/lib/supabase/server";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
 import {
   PATHNAME_HEADER,
   firstIncompleteStep,
@@ -50,10 +51,19 @@ export default async function RootLayout({
   // opts out of static-shell *validation*; it does not stop the pass.
   await connection();
 
-  const supabase = await createClient();
+  // Without Supabase credentials in this environment (e.g. a Vercel
+  // Preview deployment whose env vars are Production-scoped only),
+  // createClient() throws ("Your project's URL and Key are required")
+  // and every route 500s. There is no session to load, so render
+  // logged-out instead: the public landing page does not need auth, and
+  // the proxy already sends visitors to /login for protected routes
+  // when it cannot verify a session.
+  const supabase = hasSupabaseEnv() ? await createClient() : null;
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = supabase
+    ? await supabase.auth.getUser()
+    : { data: { user: null } };
 
   // Onboarding gate. "Complete" is derived from the stored data (see
   // lib/profileGate.ts): a display name, a gender, a city and at least
@@ -76,7 +86,7 @@ export default async function RootLayout({
   // stamp — it stamps every page request), the gate stays open rather
   // than risk trapping the user in a loop it can't verify an exit from.
   let profileComplete = false;
-  if (user) {
+  if (user && supabase) {
     const basics = await loadOnboardingBasics(supabase, user.id);
     const step = firstIncompleteStep(basics);
     profileComplete = step === null;
